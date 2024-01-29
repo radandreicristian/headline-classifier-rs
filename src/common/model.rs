@@ -11,6 +11,7 @@ pub struct ModelConfig {
     pub embedding_size: usize,
     pub hidden_size: usize,
     pub n_classes: usize,
+    pub max_seq_len: usize,
 }
 
 impl Default for ModelConfig {
@@ -18,9 +19,10 @@ impl Default for ModelConfig {
         Self {
             device: Device::Cpu,
             vocab_size: 1000,
-            embedding_size: 100,
-            hidden_size: 30,
+            embedding_size: 40,
+            hidden_size: 20,
             n_classes: 2,
+            max_seq_len: 128,
         }
     }
 }

@@ -9,5 +9,5 @@ pub struct PredictRequest {
 
 #[derive(Serialize)]
 pub struct PredictResponse {
-    pub predictions: Vec<HashMap<&'static str, f32>>,
+    pub predictions: Vec<HashMap<String, f32>>,
 }

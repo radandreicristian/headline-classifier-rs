@@ -4,8 +4,8 @@ mod serving;
 use std::sync::Arc;
 
 use common::{
-    create_class_mappings, create_vocabulary_to_index_mapping, make_mock_vocabulary,
-    CategoriesPredictorModel, ModelConfig,
+    create_class_mappings_from_class_names, create_vocabulary_to_index_mapping,
+    make_mock_vocabulary, CategoriesPredictorModel, ModelConfig,
 };
 use serving::processing::{get_predictions, map_to_class_names_with_scores};
 use serving::request_model::{PredictRequest, PredictResponse};
@@ -15,11 +15,11 @@ use warp::Filter;
 async fn main() {
     env_logger::init();
 
-    let class_names: Vec<&'static str> = vec!["sport", "weather"];
+    let class_names: Vec<String> = vec!["sport".to_string(), "weather".to_string()];
     let vocabulary = make_mock_vocabulary();
 
-    let mapping = Arc::new(create_vocabulary_to_index_mapping(vocabulary));
-    let (class_to_index, index_to_class) = create_class_mappings(class_names);
+    let mapping = Arc::new(create_vocabulary_to_index_mapping(&vocabulary));
+    let (class_to_index, index_to_class) = create_class_mappings_from_class_names(class_names);
 
     let class_to_index = Arc::new(class_to_index);
     let index_to_class = Arc::new(index_to_class);

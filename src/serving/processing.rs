@@ -9,10 +9,13 @@ use std::sync::Arc;
 
 pub fn get_predictions(
     text: &str,
-    mapping: &Arc<HashMap<&'static str, u32>>,
+    mapping: &Arc<HashMap<String, u32>>,
     model: &Arc<CategoriesPredictorModel>,
 ) -> Result<Vec<f32>, Box<dyn Error>> {
-    let words = text.split_whitespace().collect::<Vec<&str>>();
+    let words = text
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
 
     let indices = map_words_to_indices(words, mapping);
 
@@ -31,15 +34,18 @@ pub fn get_predictions(
 
 pub fn map_to_class_names_with_scores(
     logits: Vec<f32>,
-    class_name_mapping: &HashMap<usize, &'static str>,
+    class_name_mapping: &HashMap<usize, String>,
     threshold: f32,
-) -> Vec<HashMap<&'static str, f32>> {
-    let mut class_names_with_logits: Vec<HashMap<&'static str, f32>> = Vec::new();
+) -> Vec<HashMap<String, f32>> {
+    let mut class_names_with_logits: Vec<HashMap<String, f32>> = Vec::new();
 
     for (index, &logit) in logits.iter().enumerate() {
         if logit > threshold {
-            if let Some(&class_name) = class_name_mapping.get(&index) {
-                let mapping = vec![(class_name, logit)].into_iter().collect();
+            if let Some(class_name) = class_name_mapping.get(&index) {
+                let mapping = vec![(class_name, logit)]
+                    .into_iter()
+                    .map(|(c, l)| (c.to_string(), l))
+                    .collect();
                 class_names_with_logits.push(mapping);
             }
         }

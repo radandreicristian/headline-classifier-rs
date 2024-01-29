@@ -1,20 +1,20 @@
 use std::collections::HashSet;
 
-pub fn make_vocabulary(corpus: Vec<&str>) -> Vec<&str> {
-    let mut vocabulary: HashSet<&str> = HashSet::new();
+pub fn make_vocabulary(corpus: &Vec<String>) -> Vec<String> {
+    let mut vocabulary: HashSet<String> = HashSet::new();
 
     for sentence in corpus {
         let words: Vec<&str> = sentence.split_whitespace().collect();
 
         for word in words {
-            vocabulary.insert(word);
+            vocabulary.insert(word.to_string());
         }
     }
-    vocabulary.into_iter().collect::<Vec<&str>>()
+    vocabulary.into_iter().collect::<Vec<String>>()
 }
 
-pub fn make_mock_vocabulary() -> Vec<&'static str> {
-    let vocabulary: Vec<&str> = vec![
+pub fn make_mock_vocabulary() -> Vec<String> {
+    let vocabulary: Vec<String> = vec![
         "this",
         "is",
         "an",
@@ -23,7 +23,10 @@ pub fn make_mock_vocabulary() -> Vec<&'static str> {
         "just",
         "for",
         "show",
-    ];
+    ]
+    .iter()
+    .map(|word| word.to_string())
+    .collect();
 
     vocabulary
 }
