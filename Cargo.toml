@@ -1,0 +1,29 @@
+[package]
+name = "categories-predictor-rs"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "inference"
+path = "src/main.rs"
+
+[[bin]]
+name = "training"
+path = "src/training/train.rs"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "common"
+path = "src/lib.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+warp = "0.3"
+serde_json = "1.0"
+serde = "1.0"
+candle-core = "0.3.2"
+candle-nn = "0.3.2"
+candle-optimisers = "0.3.2"
+log = "0.4.20"
+env_logger = "0.11.1"
+anyhow = "1.0.0"
