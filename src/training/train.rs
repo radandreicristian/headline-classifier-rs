@@ -1,4 +1,3 @@
-// use candle_core::{Device};
 use anyhow::Result;
 use candle_core::{DType, Device, Tensor};
 
@@ -23,6 +22,7 @@ fn train(
     model_config: ModelConfig,
     train_config: TrainConfig,
 ) -> anyhow::Result<CategoriesPredictorModel> {
+
     let train_data = dataset.train_data.to_device(dev)?;
     let train_labels = dataset.train_labels.to_device(dev)?;
 
@@ -37,6 +37,7 @@ fn train(
         lr: train_config.learning_rate,
         ..ParamsAdam::default()
     };
+
     let mut optimizer = adam::Adam::new(varmap.all_vars(), optimizer_params)?;
 
     let n_epochs = train_config.n_epochs;
@@ -67,8 +68,10 @@ fn train(
             .to_dtype(DType::F32)?
             .sum_all()?
             .to_scalar::<f32>()?;
+        
+        let (n_samples, n_classes) = test_labels.dims2()?;
 
-        let test_accuracy = sum_ok / 8.;
+        let test_accuracy = sum_ok / ((n_samples * n_classes) as f32);
 
         final_accuracy = 100. * test_accuracy;
 
