@@ -27,3 +27,4 @@ candle-optimisers = "0.3.2"
 log = "0.4.20"
 env_logger = "0.11.1"
 anyhow = "1.0.0"
+polars ={ version = "0.37.0", features=["lazy"] }
