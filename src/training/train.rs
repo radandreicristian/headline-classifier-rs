@@ -4,18 +4,18 @@ use candle_core::{DType, Device, Tensor};
 
 mod config;
 mod dataset;
+mod transform;
 
 use candle_nn::ops::sigmoid;
 use candle_nn::{loss, Optimizer, VarBuilder, VarMap};
 use candle_optimisers::adam;
 use candle_optimisers::adam::ParamsAdam;
 use common::{
-    create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary,
-    map_words_to_indices, multi_hot_encode, pad_vector,
-};
+    create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary, multi_hot_encode};
 use common::{CategoriesPredictorModel, ModelConfig};
 use config::TrainConfig;
-use dataset::Dataset;
+use dataset::{read_data, Dataset};
+use transform::encode;
 
 fn train(
     dataset: Dataset,
@@ -91,104 +91,36 @@ fn train(
 pub fn main() -> Result<()> {
     env_logger::init();
 
+    let train_config = TrainConfig::default();
+    let model_config = ModelConfig::default();
+
     let device = Device::cuda_if_available(0)?;
 
-    // Load or hard-code the train data -- list of strings
-    // Todo - See if there's a workaround for this.
-    let train_data: Vec<String> = [
-        "football player leads team to victory in overtime win",
-        "tennis player dominates competition in surprise comeback",
-        "blizzard warning looms over midwest",
-        "heatwave sweeps across south",
-        "groundbreaking medical discovery promises hope for illness",
-        "tech giant unveils revolutionary new device",
-        "celebrity couple's surpsie wedding leaves fans in awe",
-        "football game interrupted by blizzard",
-    ]
-    .iter()
-    .map(|&sentence| sentence.to_string())
-    .collect();
+    // Load the data
+    let (train_data, train_labels) = read_data("data/train.csv")?;
+    let (test_data, test_labels) = read_data("data/test.csv")?;
 
-    let train_data_refs: Vec<&str> = vec![
-        "player leads team to victory in overtime win",
-        "tennis player dominates competition in surprise comeback",
-        "blizzard warning looms over midwest",
-        "heatwave sweeps across south",
-        "groundbreaking medical discovery promises hope for illness",
-        "tech giant unveils revolutionary new device",
-        "celebrity couple's surpsie wedding leaves fans in awe",
-        "history exhibistion showcase masterpieces from around the world",
-    ];
+    log::debug!("Train data sample: {:?}", train_data[0]);
 
-    let test_data: Vec<String> = [
-        "injury strikes star player of football team in overtime",
-        "no risk of blizzard or heatwave today!",
-        "tech leaders convene to address AI crisis",
-        "local communitiy rallies together to aid neighbours affected by disaster",
-    ]
-    .iter()
-    .map(|&sentence| sentence.to_string())
-    .collect();
+    // Create the class to index mapping
+    let (class_to_index, _) = create_class_mapping_from_labels(&train_labels);
 
-    // It's actually (2, 6) flattened
-    // let train_labels: Vec<u32> = vec![1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0];
-    let train_labels: Vec<&str> = vec![
-        "sports",
-        "sports",
-        "weather",
-        "weather",
-        "",
-        "",
-        "",
-        "sports,weather",
-    ];
+    log::debug!("Class to index {:?}", class_to_index);
 
-    // It's actually (2, 4) flattened
-    //let test_labels: Vec<u32> = vec![1, 0, 0, 1, 0, 0, 0, 0];
-    let test_labels: Vec<&str> = vec!["sports", "weather", "", ""];
-
-    let (class_to_index, index_to_class) = create_class_mapping_from_labels(&train_labels);
-
-    log::error!("Class to index {:?}", class_to_index);
-
+    // Multi-hot encode the labels
     let train_labels_encoded = multi_hot_encode(train_labels, &class_to_index);
     let test_labels_encoded = multi_hot_encode(test_labels, &class_to_index);
 
-    // Make vocabulary and string to index mapping
-    let vocabulary = make_vocabulary(train_data_refs);
+    // Make the vocabulary and the vocabulary to index from the training data
+    let vocabulary = make_vocabulary(&train_data);
 
-    let vocabulary_index_mapping = create_vocabulary_to_index_mapping(vocabulary);
+    let vocabulary_index_mapping = create_vocabulary_to_index_mapping(&vocabulary);
+
+    let max_seq_len = model_config.max_seq_len;
 
     // Split string, convert to indices and pad to max length
-    let train_indices: Vec<u32> = train_data
-        .iter()
-        .flat_map(|sentence| {
-            let words: Vec<&str> = sentence.split_whitespace().collect();
-            let indices = map_words_to_indices(words, &vocabulary_index_mapping);
-            pad_vector(indices, 128, 0)
-        })
-        .collect();
-
-    let train_data_tensor = Tensor::from_vec(
-        train_indices.clone(),
-        (128, train_indices.len() / 128),
-        &device,
-    )?;
-
-    let test_indices: Vec<u32> = test_data
-        .iter()
-        .flat_map(|sentence| {
-            let words: Vec<&str> = sentence.split_whitespace().collect();
-            let indices = map_words_to_indices(words, &vocabulary_index_mapping);
-            pad_vector(indices, 128, 0)
-        })
-        .collect();
-
-    let test_data_tensor = Tensor::from_vec(
-        test_indices.clone(),
-        (128, test_indices.len() / 128),
-        &device,
-    )?;
+    let train_data_tensor = encode(&train_data, max_seq_len, &vocabulary_index_mapping, &device)?;
+    let test_data_tensor = encode(&test_data, max_seq_len, &vocabulary_index_mapping, &device)?;
 
     let train_labels_tensor = Tensor::from_vec(
         train_labels_encoded.clone(),
@@ -204,11 +136,11 @@ pub fn main() -> Result<()> {
     )?
     .to_dtype(DType::F32)?;
 
-    println!("Train data tensor {:?}", train_data_tensor);
-    println!("Train labels tensor: {:?}", train_labels_tensor);
+    log::debug!("Train data tensor {:?}", train_data_tensor);
+    log::debug!("Train labels tensor: {:?}", train_labels_tensor);
 
-    println!("Test data tensor: {:?}", test_data_tensor);
-    println!("Test labels tensor: {:?}", test_labels_tensor);
+    log::debug!("Test data tensor: {:?}", test_data_tensor);
+    log::debug!("Test labels tensor: {:?}", test_labels_tensor);
 
     let dataset = Dataset {
         train_data: train_data_tensor,
@@ -218,9 +150,6 @@ pub fn main() -> Result<()> {
     };
 
     let trained_model: CategoriesPredictorModel;
-
-    let train_config = TrainConfig::default();
-    let model_config = ModelConfig::default();
 
     println!("Trying to train a classifier.");
     match train(dataset.clone(), &device, model_config, train_config) {

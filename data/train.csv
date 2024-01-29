@@ -1,0 +1,9 @@
+id,text,labels
+0,"football player leads team to victory in overtime win","sports"
+1,"tennis player dominates competition in surprise comeback","sports"
+2,"blizzard warning looms over midwest","weather"
+3,"heatwave sweeps across south","weather"
+4,"groundbreaking medical discovery promises hope for illness",""
+5,"tech giant unveils revolutionary new device",""
+6,"celebrity couple's surprise wedding leaves fans in awe",""
+7,"football game interrupted by blizzard","sports|weather"

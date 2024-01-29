@@ -7,7 +7,7 @@ impl Default for TrainConfig {
     fn default() -> Self {
         Self {
             n_epochs: 100,
-            learning_rate: 0.01,
+            learning_rate: 0.005,
         }
     }
 }
