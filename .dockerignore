@@ -1,0 +1,29 @@
+# Exclude development and build-related files
+/target/
+Cargo.lock
+Cargo.toml.orig
+Cargo.toml.orig.orig
+
+# Exclude version control files
+.git/
+.gitignore
+
+# Exclude text editor/IDE files
+.vscode/
+.idea/
+
+# Exclude temporary files
+*.swp
+*.bak
+*.tmp
+
+# Exclude documentation
+doc/
+
+# Exclude test and benchmark files
+/tests/
+/benches/
+
+# Exclude any other unnecessary files or directories
+*.log
+*.DS_Store
