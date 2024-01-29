@@ -10,7 +10,9 @@ use candle_nn::{loss, Optimizer, VarBuilder, VarMap};
 use candle_optimisers::adam;
 use candle_optimisers::adam::ParamsAdam;
 use common::{
-    create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary, multi_hot_encode};
+    create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary,
+    multi_hot_encode,
+};
 use common::{CategoriesPredictorModel, ModelConfig};
 use config::TrainConfig;
 use dataset::{read_data, Dataset};
@@ -22,7 +24,6 @@ fn train(
     model_config: ModelConfig,
     train_config: TrainConfig,
 ) -> anyhow::Result<CategoriesPredictorModel> {
-
     let train_data = dataset.train_data.to_device(dev)?;
     let train_labels = dataset.train_labels.to_device(dev)?;
 
@@ -68,7 +69,7 @@ fn train(
             .to_dtype(DType::F32)?
             .sum_all()?
             .to_scalar::<f32>()?;
-        
+
         let (n_samples, n_classes) = test_labels.dims2()?;
 
         let test_accuracy = sum_ok / ((n_samples * n_classes) as f32);
