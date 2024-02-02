@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::env::var;
+
 
 use anyhow::Result;
 use candle_core::{DType, Device, Tensor};
@@ -13,8 +12,7 @@ use candle_nn::{loss, Optimizer, VarBuilder, VarMap};
 use candle_optimisers::adam;
 use candle_optimisers::adam::ParamsAdam;
 use common::{
-    create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary,
-    multi_hot_encode, store_index_to_class_mapping, store_vocabulary, PREDICTION_THRESHOLD,
+    create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary, multi_hot_encode, store_index_to_class_mapping, store_vocabulary, MODEL_PATH, PREDICTION_THRESHOLD
 };
 use common::{CategoriesPredictorModel, ModelConfig};
 use config::TrainConfig;
@@ -26,7 +24,7 @@ fn train(
     dev: &Device,
     model_config: ModelConfig,
     train_config: TrainConfig,
-) -> anyhow::Result<CategoriesPredictorModel> {
+) -> Result<()> {
     let train_data = dataset.train_data.to_device(dev)?;
     let train_labels = dataset.train_labels.to_device(dev)?;
 
@@ -45,7 +43,12 @@ fn train(
     let mut optimizer = adam::Adam::new(varmap.all_vars(), optimizer_params)?;
 
     let n_epochs = train_config.n_epochs;
-    let mut final_accuracy: f32 = 0.0;
+
+    let mut best_accuracy: f32 = 0.0;
+    let mut best_model: VarMap = varmap.clone();
+
+    let early_stopping_patience: u8 = 5;
+    let mut early_stopping_count: u8 = 0;
 
     for epoch in 1..n_epochs + 1 {
         let logits = model.forward(&train_data)?.flatten(0, 1)?;
@@ -84,19 +87,29 @@ fn train(
 
         let test_accuracy = sum_ok / ((n_samples * n_classes) as f32);
 
-        final_accuracy = 100. * test_accuracy;
+        if test_accuracy > best_accuracy {
+            early_stopping_count = 0;
+            best_accuracy = test_accuracy;
+            best_model = varmap.clone();
+        }
+        else {
+            early_stopping_count += 1;
+            if early_stopping_count == early_stopping_patience {
+                log::warn!("Early stopping triggered.");
+                best_model.save(MODEL_PATH)?;
+                return Ok(());
+            }
+        }
 
         log::info!(
             "Epoch: {epoch:3} Train loss: {:8.5} Test accuracy: {:5.2}%",
             loss.to_scalar::<f32>()?,
-            final_accuracy
+            test_accuracy * 100f32
         );
-        if final_accuracy == 100.0 {
-            break;
-        }
     }
-    varmap.save("model/model.bin")?;
-    Ok(model)
+
+    best_model.save(MODEL_PATH)?;
+    Ok(())
 }
 
 pub fn main() -> Result<()> {
