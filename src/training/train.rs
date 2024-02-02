@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::env::var;
+
 use anyhow::Result;
 use candle_core::{DType, Device, Tensor};
 
@@ -19,7 +22,7 @@ use dataset::{read_data, Dataset};
 use transform::encode;
 
 fn train(
-    dataset: Dataset,
+    dataset: &Dataset,
     dev: &Device,
     model_config: ModelConfig,
     train_config: TrainConfig,
@@ -43,6 +46,7 @@ fn train(
 
     let n_epochs = train_config.n_epochs;
     let mut final_accuracy: f32 = 0.0;
+
     for epoch in 1..n_epochs + 1 {
         let logits = model.forward(&train_data)?.flatten(0, 1)?;
         let loss = loss::binary_cross_entropy_with_logit(&logits, &train_labels)?;
@@ -76,7 +80,7 @@ fn train(
 
         final_accuracy = 100. * test_accuracy;
 
-        println!(
+        log::info!(
             "Epoch: {epoch:3} Train loss: {:8.5} Test accuracy: {:5.2}%",
             loss.to_scalar::<f32>()?,
             final_accuracy
@@ -85,11 +89,8 @@ fn train(
             break;
         }
     }
-    if final_accuracy < 100.0 {
-        Err(anyhow::Error::msg("The model is not trained well enough."))
-    } else {
-        Ok(model)
-    }
+    varmap.save("model/model.bin")?;
+    Ok(model)
 }
 
 pub fn main() -> Result<()> {
@@ -108,7 +109,6 @@ pub fn main() -> Result<()> {
 
     // Create the class to index mapping
     let (class_to_index, index_to_class) = create_class_mapping_from_labels(&train_labels);
-
 
     // Store the index to class mapping for inference
     store_index_to_class_mapping(&index_to_class, "data/index_to_class.json")?;
@@ -132,17 +132,21 @@ pub fn main() -> Result<()> {
     // Split string, convert to indices and pad to max length
     let train_data_tensor = encode(&train_data, max_seq_len, &vocabulary_index_mapping, &device)?;
     let test_data_tensor = encode(&test_data, max_seq_len, &vocabulary_index_mapping, &device)?;
-
+    
+    let n_classes = model_config.n_classes;
+    
+    // Reshape test labels to (n_samples, n_classes)
     let train_labels_tensor = Tensor::from_vec(
         train_labels_encoded.clone(),
-        (train_labels_encoded.len() / 2, 2),
+        (train_labels_encoded.len() / n_classes, n_classes),
         &device,
     )?
     .to_dtype(DType::F32)?;
 
+    // Reshape test labels to (n_samples, n_classes)
     let test_labels_tensor = Tensor::from_vec(
         test_labels_encoded.clone(),
-        (test_labels_encoded.len() / 2, 2),
+        (test_labels_encoded.len() / n_classes, n_classes),
         &device,
     )?
     .to_dtype(DType::F32)?;
@@ -160,18 +164,8 @@ pub fn main() -> Result<()> {
         test_labels: test_labels_tensor,
     };
 
-    let trained_model: CategoriesPredictorModel;
-
-    println!("Trying to train a classifier.");
-    match train(dataset.clone(), &device, model_config, train_config) {
-        Ok(model) => {
-            trained_model = model;
-            log::info!("Model {:?}", trained_model);
-        }
-        Err(e) => {
-            println!("Error: {:?}", e);
-        }
-    }
-
+    log::info!("Started training.");
+    train(&dataset, &device, model_config, train_config)?;
+    
     Ok(())
 }
