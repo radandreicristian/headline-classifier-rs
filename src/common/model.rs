@@ -82,7 +82,7 @@ impl CategoriesPredictorModel {
         })
     }
 
-    pub fn new(vb: VarBuilder, config: ModelConfig) -> Result<Self> {
+    pub fn new(vb: &VarBuilder, config: &ModelConfig) -> Result<Self> {
         let embedding = embedding(config.vocab_size, config.embedding_size, vb.pp("embedding"))?;
         let fully_connected = linear(config.embedding_size, config.hidden_size, vb.pp("linear"))?;
         let classifier = linear(config.hidden_size, config.n_classes, vb.pp("classifier"))?;

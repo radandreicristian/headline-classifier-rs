@@ -1,13 +1,15 @@
-use common;
+use candle_core::{DType, Device};
+use common::{self, PREDICTION_THRESHOLD};
 mod inference;
 mod types;
 
+use candle_nn::{VarBuilder, VarMap};
 use std::collections::HashMap;
 use std::sync::Arc;
 
 use common::{
-    load_index_to_class_mapping, create_vocabulary_to_index_mapping,
-    load_vocabulary, CategoriesPredictorModel, ModelConfig,
+    create_vocabulary_to_index_mapping, load_index_to_class_mapping, load_vocabulary,
+    CategoriesPredictorModel, ModelConfig, INDEX_TO_CLASS_PATH, MODEL_PATH, VOCAB_PATH,
 };
 use inference::{get_predictions, map_to_class_names_with_scores};
 use types::{PredictRequest, PredictResponse};
@@ -23,25 +25,33 @@ fn with_shared_data(
 struct SharedData {
     word_to_index: Arc<HashMap<String, u32>>,
     index_to_class: Arc<HashMap<u32, String>>,
-    model: Arc<CategoriesPredictorModel>
+    model: Arc<CategoriesPredictorModel>,
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()>{
-    
+async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
-    let vocabulary = load_vocabulary("data/vocab.json")?;
+    // Load the vocabulary and the mappings
+    let vocabulary = load_vocabulary(VOCAB_PATH)?;
 
     let word_to_index = Arc::new(create_vocabulary_to_index_mapping(&vocabulary));
-    let index_to_class = load_index_to_class_mapping("data/index_to_class.json")?;
+    let index_to_class = load_index_to_class_mapping(INDEX_TO_CLASS_PATH)?;
 
     let index_to_class = Arc::new(index_to_class);
-
     let model_config = Arc::new(ModelConfig::default());
 
-    let model = Arc::new(CategoriesPredictorModel::random(&Arc::clone(&model_config))?);
+    // Load the model from MODEL_PATH via a VarMap
+    let mut varmap = VarMap::new();
+    varmap.load(MODEL_PATH)?;
 
+    let device = Device::cuda_if_available(0)?;
+
+    let vs = VarBuilder::from_varmap(&varmap, DType::F32, &device);
+
+    let model = Arc::new(CategoriesPredictorModel::new(&vs, &model_config)?);
+
+    // Build the shared data
     let shared_data = SharedData {
         word_to_index: Arc::clone(&word_to_index),
         index_to_class: Arc::clone(&index_to_class),
@@ -59,12 +69,14 @@ async fn main() -> anyhow::Result<()>{
         .and_then(|body: PredictRequest, data: SharedData| async move {
             match get_predictions(&body.text, &data.word_to_index, &data.model) {
                 Ok(predictions) => {
-                    let predicted_categories =
-                        map_to_class_names_with_scores(predictions, &data.index_to_class, 0.3);
+                    let predicted_categories = map_to_class_names_with_scores(
+                        predictions,
+                        &data.index_to_class,
+                        PREDICTION_THRESHOLD,
+                    );
                     let response = PredictResponse {
                         predictions: predicted_categories,
                     };
-                    // Todo: There's a missing sigmoid
                     Ok::<_, warp::Rejection>(warp::reply::json(&response))
                 }
                 Err(error) => Ok(warp::reply::json(

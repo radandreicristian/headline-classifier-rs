@@ -1,7 +1,11 @@
-use std::{collections::HashMap, fs::File, io::{Read, Write}};
-use serde::{Deserialize, Serialize};
-use anyhow::Error;
 use super::MultiHotEncodeError;
+use anyhow::Error;
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{Read, Write},
+};
 
 /// Creates a mapping from vocabulary words to their corresponding indices.
 ///
@@ -144,7 +148,10 @@ pub fn multi_hot_encode(
             if let Some(&index) = class_to_index.get(&label_class.to_string()) {
                 label_encodings[index as usize] = 1u32;
             } else {
-                return Err(MultiHotEncodeError::new(&format!("Label not found: {}", label_class)));
+                return Err(MultiHotEncodeError::new(&format!(
+                    "Label not found: {}",
+                    label_class
+                )));
             }
         }
         log::debug!("Encoding: {:?}", label_encodings);
@@ -156,15 +163,22 @@ pub fn multi_hot_encode(
     Ok(all_encodings)
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 struct IndexToClassMapping {
-    mapping: HashMap<u32, String>
+    mapping: HashMap<u32, String>,
 }
 
-pub fn store_index_to_class_mapping(index_to_class: &HashMap<u32, String>, file_path: &str) -> Result<(), Error> {
+pub fn store_index_to_class_mapping(
+    index_to_class: &HashMap<u32, String>,
+    file_path: &str,
+) -> Result<(), Error> {
     let mut file = File::create(file_path)?;
-    file.write_all(serde_json::to_string(&IndexToClassMapping{mapping: index_to_class.to_owned()})?.as_bytes())?;
+    file.write_all(
+        serde_json::to_string(&IndexToClassMapping {
+            mapping: index_to_class.to_owned(),
+        })?
+        .as_bytes(),
+    )?;
     Ok(())
 }
 

@@ -28,7 +28,11 @@ mod encode {
 
     #[test]
     fn test_map_to_indices_word_not_in_mapping() {
-        let words = vec!["apple".to_string(), "banana".to_string(), "cherry".to_string()];
+        let words = vec![
+            "apple".to_string(),
+            "banana".to_string(),
+            "cherry".to_string(),
+        ];
         let mapping: HashMap<String, u32> = [("apple".to_string(), 1), ("cherry".to_string(), 3)]
             .iter()
             .cloned()
@@ -53,7 +57,11 @@ mod encode {
 
     #[test]
     fn test_map_to_indices_word_in_mapping() {
-        let words = vec!["apple".to_string(), "banana".to_string(), "cherry".to_string()];
+        let words = vec![
+            "apple".to_string(),
+            "banana".to_string(),
+            "cherry".to_string(),
+        ];
         let mapping: HashMap<String, u32> = [
             ("apple".to_string(), 1),
             ("banana".to_string(), 2),
@@ -68,7 +76,7 @@ mod encode {
 
         assert_eq!(result, expected);
     }
-    
+
     #[test]
     fn test_create_class_mapping_empty_labels() {
         let labels: Vec<String> = Vec::new();
@@ -100,7 +108,11 @@ mod encode {
 
     #[test]
     fn test_create_class_mapping_multiple_labels() {
-        let labels = vec!["ClassA|ClassB".to_string(), "ClassC".to_string(), "".to_string()];
+        let labels = vec![
+            "ClassA|ClassB".to_string(),
+            "ClassC".to_string(),
+            "".to_string(),
+        ];
 
         let (class_to_index, index_to_class) = create_class_mapping_from_labels(&labels);
 
@@ -139,10 +151,7 @@ mod encode {
         let result = multi_hot_encode(labels, &class_to_index);
 
         match result {
-            Err(err) => assert_eq!(
-                err.to_string(),
-                "Label not found: ClassA".to_string()
-            ),
+            Err(err) => assert_eq!(err.to_string(), "Label not found: ClassA".to_string()),
             _ => panic!("Expected Err(\"Label not found: ClassA\")"),
         }
     }
@@ -163,7 +172,11 @@ mod encode {
 
     #[test]
     fn test_multi_hot_encode_multiple_labels() {
-        let labels = vec!["ClassA|ClassB".to_string(), "ClassC".to_string(), "".to_string()];
+        let labels = vec![
+            "ClassA|ClassB".to_string(),
+            "ClassC".to_string(),
+            "".to_string(),
+        ];
         let mut class_to_index: HashMap<String, u32> = HashMap::new();
         class_to_index.insert("ClassA".to_string(), 0);
         class_to_index.insert("ClassB".to_string(), 1);
@@ -183,5 +196,4 @@ mod encode {
             _ => panic!("Expected Ok(encodings)"),
         }
     }
-
 }

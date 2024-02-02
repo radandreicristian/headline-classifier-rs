@@ -1,11 +1,15 @@
-use std::{collections::HashSet, fs::File, io::{Read, Write}};
-use regex::Regex;
-use serde::{Serialize, Deserialize};
 use super::exception::VocabularyLoadError;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashSet,
+    fs::File,
+    io::{Read, Write},
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Vocabulary {
-    vocabulary: Vec<String>
+    vocabulary: Vec<String>,
 }
 
 /// Creates a vocabulary from a given corpus of sentences.
@@ -27,7 +31,6 @@ pub fn make_vocabulary(corpus: &Vec<String>) -> Vec<String> {
     let punctuation_regex = Regex::new(r"[[:punct:]]").unwrap();
 
     for sentence in corpus {
-        
         let sentence_without_punctuation = punctuation_regex.replace_all(sentence, "");
 
         let words: Vec<&str> = sentence_without_punctuation.split_whitespace().collect();
@@ -50,10 +53,13 @@ pub fn load_vocabulary(file_path: &str) -> Result<Vec<String>, VocabularyLoadErr
     Ok(vocabulary.vocabulary)
 }
 
-
-pub fn store_vocabulary(vocabulary: &Vec<String>, file_path: &str) -> Result<(), anyhow::Error>{
-
+pub fn store_vocabulary(vocabulary: &Vec<String>, file_path: &str) -> Result<(), anyhow::Error> {
     let mut file = File::create(file_path)?;
-    file.write_all(serde_json::to_string(&Vocabulary{vocabulary: vocabulary.to_owned()})?.as_bytes())?;
+    file.write_all(
+        serde_json::to_string(&Vocabulary {
+            vocabulary: vocabulary.to_owned(),
+        })?
+        .as_bytes(),
+    )?;
     Ok(())
 }

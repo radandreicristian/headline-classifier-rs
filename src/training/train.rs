@@ -14,7 +14,7 @@ use candle_optimisers::adam;
 use candle_optimisers::adam::ParamsAdam;
 use common::{
     create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary,
-    multi_hot_encode, store_vocabulary, store_index_to_class_mapping
+    multi_hot_encode, store_index_to_class_mapping, store_vocabulary, PREDICTION_THRESHOLD,
 };
 use common::{CategoriesPredictorModel, ModelConfig};
 use config::TrainConfig;
@@ -35,7 +35,7 @@ fn train(
 
     let varmap = VarMap::new();
     let vs = VarBuilder::from_varmap(&varmap, DType::F32, dev);
-    let model = CategoriesPredictorModel::new(vs, model_config)?;
+    let model = CategoriesPredictorModel::new(&vs, &model_config)?;
 
     let optimizer_params = adam::ParamsAdam {
         lr: train_config.learning_rate,
@@ -61,7 +61,13 @@ fn train(
             .iter()
             .flat_map(|vec: &Vec<f32>| {
                 vec.iter()
-                    .map(|value: &f32| if value >= &0.5f32 { 1.0 } else { 0.0 })
+                    .map(|value: &f32| {
+                        if value >= &PREDICTION_THRESHOLD {
+                            1.0
+                        } else {
+                            0.0
+                        }
+                    })
                     .collect::<Vec<f32>>()
             })
             .collect::<Vec<f32>>();
@@ -132,9 +138,9 @@ pub fn main() -> Result<()> {
     // Split string, convert to indices and pad to max length
     let train_data_tensor = encode(&train_data, max_seq_len, &vocabulary_index_mapping, &device)?;
     let test_data_tensor = encode(&test_data, max_seq_len, &vocabulary_index_mapping, &device)?;
-    
+
     let n_classes = model_config.n_classes;
-    
+
     // Reshape test labels to (n_samples, n_classes)
     let train_labels_tensor = Tensor::from_vec(
         train_labels_encoded.clone(),
@@ -166,6 +172,6 @@ pub fn main() -> Result<()> {
 
     log::info!("Started training.");
     train(&dataset, &device, model_config, train_config)?;
-    
+
     Ok(())
 }

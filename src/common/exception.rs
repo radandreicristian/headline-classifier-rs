@@ -1,6 +1,5 @@
 use std::{error::Error, fmt};
 
-
 #[derive(Debug)]
 pub struct MultiHotEncodeError {
     pub message: String,

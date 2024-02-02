@@ -17,12 +17,15 @@ mod encode {
 
     #[test]
     fn test_make_vocabulary_multiple_sentences() {
-        let corpus = vec![
-            "This is a test.".to_string(),
-            "Another test.".to_string(),
-        ];
+        let corpus = vec!["This is a test.".to_string(), "Another test.".to_string()];
         let vocabulary = make_vocabulary(&corpus);
-        let expected_words_in_vocabulary: Vec<String> = vec!["This".to_string(), "is".to_string(), "a".to_string(), "test".to_string(), "Another".to_string()];
+        let expected_words_in_vocabulary: Vec<String> = vec![
+            "This".to_string(),
+            "is".to_string(),
+            "a".to_string(),
+            "test".to_string(),
+            "Another".to_string(),
+        ];
         for word in expected_words_in_vocabulary {
             assert!(vocabulary.contains(&word));
         }
