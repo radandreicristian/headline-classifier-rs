@@ -1,5 +1,3 @@
-use std::vec;
-
 use anyhow::Error;
 use candle_core::Tensor;
 use polars::io::{csv::CsvReader, SerReader};

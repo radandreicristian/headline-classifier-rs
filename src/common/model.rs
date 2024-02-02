@@ -1,9 +1,8 @@
 use candle_core::{Result, Tensor};
-use candle_nn::ops::sigmoid;
+
 use candle_nn::{embedding, linear, Embedding, Linear, Module, VarBuilder};
 
 use candle_core::Device;
-use candle_optimisers::Model;
 
 pub struct ModelConfig {
     pub device: Device,
@@ -14,6 +13,8 @@ pub struct ModelConfig {
     pub max_seq_len: usize,
 }
 
+pub const MAX_SEQ_LEN: usize = 128;
+
 impl Default for ModelConfig {
     fn default() -> Self {
         Self {
@@ -22,7 +23,7 @@ impl Default for ModelConfig {
             embedding_size: 40,
             hidden_size: 20,
             n_classes: 2,
-            max_seq_len: 128,
+            max_seq_len: MAX_SEQ_LEN,
         }
     }
 }

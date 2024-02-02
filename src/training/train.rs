@@ -112,8 +112,8 @@ pub fn main() -> Result<()> {
     log::debug!("Class to index {:?}", class_to_index);
 
     // Multi-hot encode the labels
-    let train_labels_encoded = multi_hot_encode(train_labels, &class_to_index);
-    let test_labels_encoded = multi_hot_encode(test_labels, &class_to_index);
+    let train_labels_encoded = multi_hot_encode(train_labels, &class_to_index)?;
+    let test_labels_encoded = multi_hot_encode(test_labels, &class_to_index)?;
 
     // Make the vocabulary and the vocabulary to index from the training data
     let vocabulary = make_vocabulary(&train_data);
