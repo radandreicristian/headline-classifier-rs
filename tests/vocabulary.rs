@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod encode {
 
-    use std::collections::HashSet;
-
     use common::vocabulary::*;
 
     #[test]

@@ -68,58 +68,7 @@ mod encode {
 
         assert_eq!(result, expected);
     }
-
-
-    #[test]
-    fn test_create_class_mappings_empty() {
-        let class_names: Vec<String> = Vec::new();
-
-        let (class_to_index, index_to_class) = create_class_mappings_from_class_names(class_names);
-
-        let expected_class_to_index: HashMap<String, u32> = HashMap::new();
-        let expected_index_to_class: HashMap<u32, String> = HashMap::new();
-
-        assert_eq!(class_to_index, expected_class_to_index);
-        assert_eq!(index_to_class, expected_index_to_class);
-    }
-
-    #[test]
-    fn test_create_class_mappings_single_class() {
-        let class_names = vec!["ClassA".to_string()];
-        
-        let (class_to_index, index_to_class) = create_class_mappings_from_class_names(class_names);
-
-        let mut expected_class_to_index: HashMap<String, u32> = HashMap::new();
-        let mut expected_index_to_class: HashMap<u32, String> = HashMap::new();
-        
-        expected_class_to_index.insert("ClassA".to_string(), 0);
-        expected_index_to_class.insert(0, "ClassA".to_string());
-
-        assert_eq!(class_to_index, expected_class_to_index);
-        assert_eq!(index_to_class, expected_index_to_class);
-    }
-
-    #[test]
-    fn test_create_class_mappings_multiple_classes() {
-        let class_names = vec!["ClassA".to_string(), "ClassB".to_string(), "ClassC".to_string()];
-        
-        let (class_to_index, index_to_class) = create_class_mappings_from_class_names(class_names);
-
-        let mut expected_class_to_index: HashMap<String, u32> = HashMap::new();
-        let mut expected_index_to_class: HashMap<u32, String> = HashMap::new();
-        
-        expected_class_to_index.insert("ClassA".to_string(), 0);
-        expected_class_to_index.insert("ClassB".to_string(), 1);
-        expected_class_to_index.insert("ClassC".to_string(), 2);
-        
-        expected_index_to_class.insert(0, "ClassA".to_string());
-        expected_index_to_class.insert(1, "ClassB".to_string());
-        expected_index_to_class.insert(2, "ClassC".to_string());
-
-        assert_eq!(class_to_index, expected_class_to_index);
-        assert_eq!(index_to_class, expected_index_to_class);
-    }
-
+    
     #[test]
     fn test_create_class_mapping_empty_labels() {
         let labels: Vec<String> = Vec::new();

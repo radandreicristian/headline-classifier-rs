@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use common::{
-    create_class_mappings_from_class_names, create_vocabulary_to_index_mapping,
+    load_index_to_class_mapping, create_vocabulary_to_index_mapping,
     load_vocabulary, CategoriesPredictorModel, ModelConfig,
 };
 use inference::{get_predictions, map_to_class_names_with_scores};
@@ -31,11 +31,10 @@ async fn main() -> anyhow::Result<()>{
     
     env_logger::init();
 
-    let class_names: Vec<String> = vec!["sport".to_string(), "weather".to_string()];
-    let vocabulary = load_vocabulary("data/mock_vocab.json")?;
+    let vocabulary = load_vocabulary("data/vocab.json")?;
 
     let word_to_index = Arc::new(create_vocabulary_to_index_mapping(&vocabulary));
-    let (_, index_to_class) = create_class_mappings_from_class_names(class_names);
+    let index_to_class = load_index_to_class_mapping("data/index_to_class.json")?;
 
     let index_to_class = Arc::new(index_to_class);
 

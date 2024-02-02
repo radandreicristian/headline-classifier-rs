@@ -11,7 +11,7 @@ use candle_optimisers::adam;
 use candle_optimisers::adam::ParamsAdam;
 use common::{
     create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary,
-    multi_hot_encode,
+    multi_hot_encode, store_vocabulary, store_index_to_class_mapping
 };
 use common::{CategoriesPredictorModel, ModelConfig};
 use config::TrainConfig;
@@ -107,7 +107,11 @@ pub fn main() -> Result<()> {
     log::debug!("Train data sample: {:?}", train_data[0]);
 
     // Create the class to index mapping
-    let (class_to_index, _) = create_class_mapping_from_labels(&train_labels);
+    let (class_to_index, index_to_class) = create_class_mapping_from_labels(&train_labels);
+
+
+    // Store the index to class mapping for inference
+    store_index_to_class_mapping(&index_to_class, "data/index_to_class.json")?;
 
     log::debug!("Class to index {:?}", class_to_index);
 
@@ -117,6 +121,9 @@ pub fn main() -> Result<()> {
 
     // Make the vocabulary and the vocabulary to index from the training data
     let vocabulary = make_vocabulary(&train_data);
+
+    // Store the vocabulary to be loaded during inference
+    store_vocabulary(&vocabulary, "data/vocab.json")?;
 
     let vocabulary_index_mapping = create_vocabulary_to_index_mapping(&vocabulary);
 

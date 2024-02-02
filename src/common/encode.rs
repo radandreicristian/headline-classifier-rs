@@ -1,4 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, io::{Read, Write}};
+use serde::{Deserialize, Serialize};
+use anyhow::Error;
 use super::MultiHotEncodeError;
 
 /// Creates a mapping from vocabulary words to their corresponding indices.
@@ -51,39 +53,6 @@ pub fn map_to_indices(words: Vec<String>, mapping: &HashMap<String, u32>) -> Vec
         .iter()
         .map(|word| mapping.get(word).copied().unwrap_or(0))
         .collect()
-}
-
-/// Creates mappings between class names and their corresponding indices.
-///
-/// This function takes a vector of class names `class_names` and creates two mappings:
-///   - A mapping from class names (strings) to their corresponding indices (u32).
-///   - A reverse mapping from indices to class names.
-///
-/// These mappings are often used in machine learning tasks where class labels need to be
-/// represented as indices for model training and evaluation.
-///
-/// # Arguments
-///
-/// * `class_names`: A vector of strings representing the class names.
-///
-/// # Returns
-///
-/// A tuple containing two `HashMap` instances:
-///   - The first `HashMap` maps class names (strings) to their corresponding indices (u32).
-///   - The second `HashMap` maps indices to their corresponding class names.
-pub fn create_class_mappings_from_class_names(
-    class_names: Vec<String>,
-) -> (HashMap<String, u32>, HashMap<u32, String>) {
-    let mut index_to_class: HashMap<u32, String> = HashMap::new();
-    let mut class_to_index: HashMap<String, u32> = HashMap::new();
-
-    for (index, word) in class_names.iter().enumerate() {
-        let index_u32 = index as u32;
-        index_to_class.insert(index_u32, word.to_string());
-        class_to_index.insert(word.to_string(), index_u32);
-    }
-
-    (class_to_index, index_to_class)
 }
 
 /// Creates mappings between class labels and their corresponding indices.
@@ -185,4 +154,27 @@ pub fn multi_hot_encode(
     log::debug!("All encodings {:?}", all_encodings);
 
     Ok(all_encodings)
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+struct IndexToClassMapping {
+    mapping: HashMap<u32, String>
+}
+
+pub fn store_index_to_class_mapping(index_to_class: &HashMap<u32, String>, file_path: &str) -> Result<(), Error> {
+    let mut file = File::create(file_path)?;
+    file.write_all(serde_json::to_string(&IndexToClassMapping{mapping: index_to_class.to_owned()})?.as_bytes())?;
+    Ok(())
+}
+
+pub fn load_index_to_class_mapping(file_path: &str) -> Result<HashMap<u32, String>, Error> {
+    let mut file = File::open(file_path)?;
+    let mut json_data = String::new();
+
+    file.read_to_string(&mut json_data)?;
+
+    let mapping: IndexToClassMapping = serde_json::from_str(&json_data)?;
+
+    Ok(mapping.mapping)
 }

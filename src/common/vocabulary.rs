@@ -1,9 +1,9 @@
-use std::{collections::HashSet, fs::File, io::Read};
+use std::{collections::HashSet, fs::File, io::{Read, Write}};
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use super::exception::VocabularyLoadError;
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Vocabulary {
     vocabulary: Vec<String>
 }
@@ -48,4 +48,12 @@ pub fn load_vocabulary(file_path: &str) -> Result<Vec<String>, VocabularyLoadErr
     let vocabulary: Vocabulary = serde_json::from_str(&json_data)?;
 
     Ok(vocabulary.vocabulary)
+}
+
+
+pub fn store_vocabulary(vocabulary: &Vec<String>, file_path: &str) -> Result<(), anyhow::Error>{
+
+    let mut file = File::create(file_path)?;
+    file.write_all(serde_json::to_string(&Vocabulary{vocabulary: vocabulary.to_owned()})?.as_bytes())?;
+    Ok(())
 }
