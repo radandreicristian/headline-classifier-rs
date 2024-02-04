@@ -168,6 +168,21 @@ struct IndexToClassMapping {
     mapping: HashMap<u32, String>,
 }
 
+/// Store the provided index-to-class mapping in a JSON file.
+///
+/// # Arguments
+///
+/// * `index_to_class` - A reference to a HashMap<u32, String> representing the index-to-class mapping to be stored.
+/// * `file_path` - A string containing the path to the JSON file where the mapping will be stored.
+///
+/// # Errors
+///
+/// This function can return an error if there are issues with file creation, JSON serialization, or file writing.
+///
+/// # Returns
+///
+/// This function returns `Result<(), Error>`, where `()` indicates success and `Error` represents any encountered errors.
+
 pub fn store_index_to_class_mapping(
     index_to_class: &HashMap<u32, String>,
     file_path: &str,
@@ -182,6 +197,19 @@ pub fn store_index_to_class_mapping(
     Ok(())
 }
 
+/// Load an index-to-class mapping from a JSON file.
+///
+/// # Arguments
+///
+/// * `file_path` - A string containing the path to the JSON file from which the mapping will be loaded.
+///
+/// # Errors
+///
+/// This function can return an error if there are issues with file opening, reading, JSON deserialization, or data conversion.
+///
+/// # Returns
+///
+/// This function returns a `Result<HashMap<u32, String>, Error>`, where `HashMap<u32, String>` represents the loaded index-to-class mapping on success, and `Error` represents any encountered errors.
 pub fn load_index_to_class_mapping(file_path: &str) -> Result<HashMap<u32, String>, Error> {
     let mut file = File::open(file_path)?;
     let mut json_data = String::new();

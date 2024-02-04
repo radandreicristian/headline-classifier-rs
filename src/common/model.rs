@@ -29,59 +29,27 @@ impl Default for ModelConfig {
 }
 
 #[derive(Debug)]
-pub struct CategoriesPredictorModel {
+pub struct HeadlineClassifierModel {
     embedding: Embedding,
     fully_connected: Linear,
     classifier: Linear,
 }
 
-impl CategoriesPredictorModel {
-    pub fn random(config: &ModelConfig) -> Result<Self> {
-        let embedding = Embedding::new(
-            Tensor::rand(
-                -0.1f32,
-                0.1f32,
-                &[config.vocab_size, config.embedding_size],
-                &config.device,
-            )?,
-            config.embedding_size,
-        );
-        let fully_connected = Linear::new(
-            Tensor::rand(
-                -0.1f32,
-                0.1f32,
-                &[config.hidden_size, config.embedding_size],
-                &config.device,
-            )?,
-            Some(Tensor::rand(
-                -0.1f32,
-                0.1f32,
-                &[config.hidden_size],
-                &config.device,
-            )?),
-        );
-        let classifier = Linear::new(
-            Tensor::rand(
-                -0.1f32,
-                0.1f32,
-                &[config.n_classes, config.hidden_size],
-                &config.device,
-            )?,
-            Some(Tensor::rand(
-                -0.1f32,
-                0.1f32,
-                &[config.n_classes],
-                &config.device,
-            )?),
-        );
-
-        Ok(Self {
-            embedding,
-            fully_connected,
-            classifier,
-        })
-    }
-
+impl HeadlineClassifierModel {
+    /// Create a new instance of a model using the provided VarBuilder and ModelConfig.
+    ///
+    /// # Arguments
+    ///
+    /// * `vb` - A reference to a VarBuilder used for creating variables.
+    /// * `config` - A reference to a ModelConfig containing configuration parameters for the model.
+    ///
+    /// # Errors
+    ///
+    /// This function can return an error if there are issues with creating embedding or linear layers using the VarBuilder, or if any other initialization fails.
+    ///
+    /// # Returns
+    ///
+    /// This function returns a `Result<Self>`, where `Self` represents the newly created model instance on success.
     pub fn new(vb: &VarBuilder, config: &ModelConfig) -> Result<Self> {
         let embedding = embedding(config.vocab_size, config.embedding_size, vb.pp("embedding"))?;
         let fully_connected = linear(config.embedding_size, config.hidden_size, vb.pp("linear"))?;

@@ -1,6 +1,40 @@
 use candle_core::Tensor;
 
-pub fn f1_score(predicted_labels: &Tensor, actual_labels: &Tensor) -> Result<f32, candle_core::Error> {
+/// Fold and count occurrences of specific values in two sets of nested Vecs.
+///
+/// # Arguments
+///
+/// * `predicted_labels` - A reference to a Vec<Vec<T>> representing predicted labels.
+/// * `actual_labels` - A reference to a Vec<Vec<T>> representing actual labels.
+/// * `predicted_value` - The value to compare against in predicted_labels.
+/// * `actual_value` - The value to compare against in actual_labels.
+///
+/// # Returns
+///
+/// This function returns the count of occurrences where `predicted_value` and `actual_value` match within the nested Vecs.
+
+fn fold_with_values<T: PartialEq>(
+    predicted_labels: &Vec<Vec<T>>,
+    actual_labels: &Vec<Vec<T>>,
+    predicted_value: T,
+    actual_value: T,
+) -> usize {
+    predicted_labels
+        .iter()
+        .zip(actual_labels.iter())
+        .fold(0, |acc, (p, a)| {
+            acc + p
+                .iter()
+                .zip(a.iter())
+                .filter(|(p_i, a_i)| **p_i == predicted_value && **a_i == actual_value)
+                .count()
+        })
+}
+
+pub fn f1_score(
+    predicted_labels: &Tensor,
+    actual_labels: &Tensor,
+) -> Result<f32, candle_core::Error> {
     let predicted_vector = predicted_labels.to_vec2::<f32>()?;
     let actual_vector = actual_labels.to_vec2::<f32>()?;
 
@@ -19,14 +53,6 @@ pub fn f1_score(predicted_labels: &Tensor, actual_labels: &Tensor) -> Result<f32
     let f1_score = 2.0 * (precision * recall) / (precision + recall);
 
     Ok(f1_score)
-}
-
-
-fn fold_with_values<T: PartialEq>(predicted_labels: &Vec<Vec<T>>, actual_labels: &Vec<Vec<T>>, predicted_value: T, actual_value: T) -> usize {
-        
-    predicted_labels.iter().zip(actual_labels.iter()).fold(0, |acc, (p, a)| {
-        acc + p.iter().zip(a.iter()).filter(|(p_i, a_i)| **p_i == predicted_value && **a_i == actual_value).count()
-    })
 }
 
 pub fn true_positives(predicted_labels: &Vec<Vec<f32>>, actual_labels: &Vec<Vec<f32>>) -> usize {

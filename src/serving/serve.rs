@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use common::{
     create_vocabulary_to_index_mapping, load_index_to_class_mapping, load_vocabulary,
-    CategoriesPredictorModel, ModelConfig, INDEX_TO_CLASS_PATH, MODEL_PATH, VOCAB_PATH,
+    HeadlineClassifierModel, ModelConfig, INDEX_TO_CLASS_PATH, MODEL_PATH, VOCAB_PATH,
 };
 use inference::{get_predictions, map_to_class_names_with_scores};
 use types::{PredictRequest, PredictResponse};
@@ -25,7 +25,7 @@ fn with_shared_data(
 struct SharedData {
     word_to_index: Arc<HashMap<String, u32>>,
     index_to_class: Arc<HashMap<u32, String>>,
-    model: Arc<CategoriesPredictorModel>,
+    model: Arc<HeadlineClassifierModel>,
 }
 
 #[tokio::main]
@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
 
     let vs = VarBuilder::from_varmap(&varmap, DType::F32, &device);
 
-    let model = Arc::new(CategoriesPredictorModel::new(&vs, &model_config)?);
+    let model = Arc::new(HeadlineClassifierModel::new(&vs, &model_config)?);
 
     // Build the shared data
     let shared_data = SharedData {

@@ -1,13 +1,29 @@
 use anyhow::{anyhow, Error};
 use candle_core::{Device, Tensor};
 use candle_nn::ops::sigmoid;
-use common::{map_to_indices, pad_vector, CategoriesPredictorModel, MAX_SEQ_LEN};
+use common::{map_to_indices, pad_vector, HeadlineClassifierModel, MAX_SEQ_LEN};
 use std::collections::HashMap;
 
+
+/// Get predictions from a headline classification model for the given text.
+///
+/// # Arguments
+///
+/// * `text` - A string containing the input text for which predictions are to be generated.
+/// * `word_to_index` - A reference to a HashMap<String, u32> mapping words to their corresponding indices.
+/// * `model` - A reference to a HeadlineClassifierModel used for making predictions.
+///
+/// # Errors
+///
+/// This function can return an error if there are issues with tokenization, index mapping, tensor conversion, model inference, or sigmoid transformation.
+///
+/// # Returns
+///
+/// This function returns a `Result<Vec<f32>, Error>`, where `Vec<f32>` represents the predicted probabilities for each class on success, and `Error` represents any encountered errors.
 pub fn get_predictions(
     text: &str,
     word_to_index: &HashMap<String, u32>,
-    model: &CategoriesPredictorModel,
+    model: &HeadlineClassifierModel,
 ) -> Result<Vec<f32>, Error> {
     let words = text
         .split_whitespace()
@@ -32,6 +48,17 @@ pub fn get_predictions(
     Ok(predictions_vec)
 }
 
+/// Map logits to class names with scores based on a given threshold.
+///
+/// # Arguments
+///
+/// * `logits` - A vector of f32 representing the logits or scores for each class.
+/// * `index_to_class` - A reference to a HashMap<u32, String> mapping class indices to their corresponding names.
+/// * `threshold` - A threshold value used to filter out class names with logits below this value.
+///
+/// # Returns
+///
+/// This function returns a vector of HashMaps, where each HashMap associates class names (String) with their corresponding scores (f32).
 pub fn map_to_class_names_with_scores(
     logits: Vec<f32>,
     index_to_class: &HashMap<u32, String>,

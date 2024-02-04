@@ -42,6 +42,19 @@ pub fn make_vocabulary(corpus: &Vec<String>) -> Vec<String> {
     vocabulary.into_iter().collect::<Vec<String>>()
 }
 
+/// Load a vocabulary from a JSON file.
+///
+/// # Arguments
+///
+/// * `file_path` - A string containing the path to the JSON file from which the vocabulary will be loaded.
+///
+/// # Errors
+///
+/// This function can return an error of type `VocabularyLoadError` if there are issues with file opening, reading, JSON deserialization, or data conversion.
+///
+/// # Returns
+///
+/// This function returns a `Result<Vec<String>, VocabularyLoadError>`, where `Vec<String>` represents the loaded vocabulary on success, and `VocabularyLoadError` represents any encountered errors specific to vocabulary loading
 pub fn load_vocabulary(file_path: &str) -> Result<Vec<String>, VocabularyLoadError> {
     let mut file = File::open(file_path)?;
     let mut json_data = String::new();
@@ -53,6 +66,20 @@ pub fn load_vocabulary(file_path: &str) -> Result<Vec<String>, VocabularyLoadErr
     Ok(vocabulary.vocabulary)
 }
 
+/// Store a vocabulary in a JSON file.
+///
+/// # Arguments
+///
+/// * `vocabulary` - A reference to a Vec<String> containing the vocabulary to be stored.
+/// * `file_path` - A string containing the path to the JSON file where the vocabulary will be stored.
+///
+/// # Errors
+///
+/// This function can return an error of type `anyhow::Error` if there are issues with file creation, JSON serialization, or file writing.
+///
+/// # Returns
+///
+/// This function returns `Result<(), anyhow::Error>`, where `()` indicates success, and `anyhow::Error` represents any encountered errors.
 pub fn store_vocabulary(vocabulary: &Vec<String>, file_path: &str) -> Result<(), anyhow::Error> {
     let mut file = File::create(file_path)?;
     file.write_all(

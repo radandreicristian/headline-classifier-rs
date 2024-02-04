@@ -1,12 +1,10 @@
-
-
 use anyhow::Result;
 use candle_core::{DType, Device, Tensor};
 
 mod config;
 mod dataset;
-mod transform;
 mod metrics;
+mod transform;
 
 use metrics::f1_score;
 
@@ -15,9 +13,11 @@ use candle_nn::{loss, Optimizer, VarBuilder, VarMap};
 use candle_optimisers::adam;
 use candle_optimisers::adam::ParamsAdam;
 use common::{
-    create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary, multi_hot_encode, store_index_to_class_mapping, store_vocabulary, MODEL_PATH, PREDICTION_THRESHOLD
+    create_class_mapping_from_labels, create_vocabulary_to_index_mapping, make_vocabulary,
+    multi_hot_encode, store_index_to_class_mapping, store_vocabulary, MODEL_PATH,
+    PREDICTION_THRESHOLD,
 };
-use common::{CategoriesPredictorModel, ModelConfig};
+use common::{HeadlineClassifierModel, ModelConfig};
 use config::TrainConfig;
 use dataset::{read_data, Dataset};
 use transform::encode;
@@ -34,15 +34,18 @@ fn train(
     let test_data = dataset.test_data.to_device(dev)?;
     let test_labels = dataset.test_labels.to_device(dev)?;
 
+    // Create a new varmap withoud loading it
     let varmap = VarMap::new();
     let vs = VarBuilder::from_varmap(&varmap, DType::F32, dev);
-    let model = CategoriesPredictorModel::new(&vs, &model_config)?;
+    let model = HeadlineClassifierModel::new(&vs, &model_config)?;
 
     let optimizer_params = adam::ParamsAdam {
         lr: train_config.learning_rate,
         ..ParamsAdam::default()
     };
 
+    // Create an optimizer for all the varmap tensors
+    // PyTorch equivalent of Adam(model.parameters(), ...)
     let mut optimizer = adam::Adam::new(varmap.all_vars(), optimizer_params)?;
 
     let n_epochs = train_config.n_epochs;
@@ -53,13 +56,18 @@ fn train(
     let mut early_stopping_count: u8 = 0;
 
     for epoch in 1..n_epochs + 1 {
+
+        // Forward the training data.
+        // PyTorch equivalent of model(...). We need to explicitly call forward in Rust.
+        // Todo - Maybe add batching here.
         let logits = model.forward(&train_data)?.flatten(0, 1)?;
         let loss = loss::binary_cross_entropy_with_logit(&logits, &train_labels)?;
 
         optimizer.backward_step(&loss)?;
 
         let test_logits = sigmoid(&model.forward(&test_data)?.flatten(0, 1)?)?;
-
+        
+        // Todo - Probably can do this directly on the tensors.
         let test_predictions = test_logits
             .to_vec2::<f32>()
             .unwrap()
@@ -78,18 +86,27 @@ fn train(
             .collect::<Vec<f32>>();
         let (n_samples, n_classes) = test_labels.dims2()?;
 
-        let test_prediciton_tensor = Tensor::from_vec(test_predictions.clone(), (n_samples, n_classes), dev)?;
-        
+        let test_prediciton_tensor =
+            Tensor::from_vec(test_predictions.clone(), (n_samples, n_classes), dev)?;
+
         log::info!("Test predictions {:?}", test_predictions);
-        log::info!("Test labels: {:?}", test_labels.clone().to_vec2::<f32>()?.into_iter().flatten().collect::<Vec<f32>>());
+        log::info!(
+            "Test labels: {:?}",
+            test_labels
+                .clone()
+                .to_vec2::<f32>()?
+                .into_iter()
+                .flatten()
+                .collect::<Vec<f32>>()
+        );
 
         let test_f1_score = f1_score(&test_prediciton_tensor, &test_labels)?;
         if test_f1_score > best_f1_score {
             early_stopping_count = 0;
             best_f1_score = test_f1_score;
             best_model = varmap.clone();
-        }
-        else {
+        } else {
+            // Store the model (essentially store the varbuilder) if ES is triggered.
             early_stopping_count += 1;
             if early_stopping_count == train_config.early_stop_patience {
                 log::warn!("Early stopping triggered.");
@@ -103,8 +120,9 @@ fn train(
             loss.to_scalar::<f32>()?,
             test_f1_score
         );
-    }
+    }  
 
+    // If the training finishes without ES, store the model at the end.
     best_model.save(MODEL_PATH)?;
     Ok(())
 }

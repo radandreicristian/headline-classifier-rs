@@ -9,6 +9,19 @@ pub struct Dataset {
     pub test_labels: Tensor,
 }
 
+/// Convert a Polars Series into a vector of strings.
+///
+/// # Arguments
+///
+/// * `series` - A reference to a Polars Series that is to be converted.
+///
+/// # Errors
+///
+/// This function can return an error if there are issues with type conversion or data manipulation.
+///
+/// # Returns
+///
+/// This function returns a `Result<Vec<String>, Error>`, where `Vec<String>` represents the converted strings on success, and `Error` represents any encountered errors.
 fn convert_series_to_string_vector(series: &polars::prelude::Series) -> Result<Vec<String>, Error> {
     let vec_of_strings: Vec<String> = series
         .str()?
@@ -22,6 +35,19 @@ fn convert_series_to_string_vector(series: &polars::prelude::Series) -> Result<V
     Ok(vec_of_strings)
 }
 
+/// Read data from a CSV file and extract text and labels.
+///
+/// # Arguments
+///
+/// * `path` - A string containing the path to the CSV file to be read.
+///
+/// # Errors
+///
+/// This function can return an error if there are issues with CSV file reading, data extraction, or type conversion.
+///
+/// # Returns
+///
+/// This function returns a `Result<(Vec<String>, Vec<String>), Error>`, where the tuple represents the extracted text and labels as vectors of strings on success, and `Error` represents any encountered errors.
 pub fn read_data(path: &str) -> Result<(Vec<String>, Vec<String>), Error> {
     let df = CsvReader::from_path(path)?.has_header(true).finish()?;
 
