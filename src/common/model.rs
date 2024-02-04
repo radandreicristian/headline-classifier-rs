@@ -20,7 +20,7 @@ impl Default for ModelConfig {
         Self {
             device: Device::Cpu,
             vocab_size: 1000,
-            embedding_size: 40,
+            embedding_size: 15,
             hidden_size: 20,
             n_classes: 2,
             max_seq_len: MAX_SEQ_LEN,

@@ -6,6 +6,9 @@ use candle_core::{DType, Device, Tensor};
 mod config;
 mod dataset;
 mod transform;
+mod metrics;
+
+use metrics::f1_score;
 
 use candle_nn::ops::sigmoid;
 use candle_nn::{loss, Optimizer, VarBuilder, VarMap};
@@ -44,10 +47,9 @@ fn train(
 
     let n_epochs = train_config.n_epochs;
 
-    let mut best_accuracy: f32 = 0.0;
+    let mut best_f1_score: f32 = 0.0;
     let mut best_model: VarMap = varmap.clone();
 
-    let early_stopping_patience: u8 = 5;
     let mut early_stopping_count: u8 = 0;
 
     for epoch in 1..n_epochs + 1 {
@@ -74,27 +76,22 @@ fn train(
                     .collect::<Vec<f32>>()
             })
             .collect::<Vec<f32>>();
-
-        let test_prediciton_tensor = Tensor::from_vec(test_predictions, (4, 2), dev)?;
-
-        let sum_ok = test_prediciton_tensor
-            .eq(&test_labels)?
-            .to_dtype(DType::F32)?
-            .sum_all()?
-            .to_scalar::<f32>()?;
-
         let (n_samples, n_classes) = test_labels.dims2()?;
 
-        let test_accuracy = sum_ok / ((n_samples * n_classes) as f32);
+        let test_prediciton_tensor = Tensor::from_vec(test_predictions.clone(), (n_samples, n_classes), dev)?;
+        
+        log::info!("Test predictions {:?}", test_predictions);
+        log::info!("Test labels: {:?}", test_labels.clone().to_vec2::<f32>()?.into_iter().flatten().collect::<Vec<f32>>());
 
-        if test_accuracy > best_accuracy {
+        let test_f1_score = f1_score(&test_prediciton_tensor, &test_labels)?;
+        if test_f1_score > best_f1_score {
             early_stopping_count = 0;
-            best_accuracy = test_accuracy;
+            best_f1_score = test_f1_score;
             best_model = varmap.clone();
         }
         else {
             early_stopping_count += 1;
-            if early_stopping_count == early_stopping_patience {
+            if early_stopping_count == train_config.early_stop_patience {
                 log::warn!("Early stopping triggered.");
                 best_model.save(MODEL_PATH)?;
                 return Ok(());
@@ -102,9 +99,9 @@ fn train(
         }
 
         log::info!(
-            "Epoch: {epoch:3} Train loss: {:8.5} Test accuracy: {:5.2}%",
+            "Epoch: {epoch:3} Train loss: {:8.5} Test F1: {:5.2}%",
             loss.to_scalar::<f32>()?,
-            test_accuracy * 100f32
+            test_f1_score
         );
     }
 
